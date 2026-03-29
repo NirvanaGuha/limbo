@@ -9,6 +9,45 @@
 </head>
 
 <body>
+  <audio id="ambient-audio" loop preload="auto">
+    <source src="/limbo-bgm.webm" type="audio/webm">
+  </audio>
+
+  <button id="audio-btn" aria-label="Toggle Audio">
+    <svg id="audio-icon-muted" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+      <line x1="23" y1="9" x2="17" y2="15"></line>
+      <line x1="17" y1="9" x2="23" y2="15"></line>
+    </svg>
+    <svg id="audio-icon-playing" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+      style="display: none;">
+      <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+      <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+    </svg>
+  </button>
+
+  <button id="menu-btn" aria-label="Toggle Menu">
+    <div class="hamburger-line"></div>
+    <div class="hamburger-line"></div>
+  </button>
+
+  <nav id="full-menu">
+    <ul>
+      <li><button class="nav-link" data-target="#master-pin">01. The Void</button></li>
+      <li><button class="nav-link" data-target="#step-video">02. Gameplay</button></li>
+      <li><button class="nav-link" data-target="#step-post-video">03. Beyond</button></li>
+      <li><button class="nav-link" data-target="#step-final">04. The Spider</button></li>
+      <li><button class="nav-link" data-target="#step-outro">05. Credits</button></li>
+    </ul>
+  </nav>
+
+  <div id="grain-overlay"></div>
+
+  <div id="scroll-cue">
+    <span class="cue-text">Scroll</span>
+    <div class="cue-line"></div>
+  </div>
+
   <div id="hero"></div>
 
   <div class="video-container">
@@ -22,7 +61,6 @@
   <div class="scroll-container">
 
     <section class="step" id="master-pin">
-
       <div id="mask-container">
         <svg viewBox="0 0 160 90" preserveAspectRatio="xMidYMid slice">
           <defs>
@@ -70,7 +108,6 @@
           </div>
         </div>
       </div>
-
     </section>
 
     <section class="step" id="step-video"></section>

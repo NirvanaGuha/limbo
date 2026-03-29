@@ -45,25 +45,34 @@ async function init() {
   });
   scene.add(new THREE.Mesh(new THREE.PlaneGeometry(300, 300), bgMaterial));
 
-  const video = document.getElementById('gameplay-video');
+  // --- AUDIO LOGIC ---
+  const audioBtn = document.getElementById('audio-btn');
+  const ambientAudio = document.getElementById('ambient-audio');
+  const iconMuted = document.getElementById('audio-icon-muted');
+  const iconPlaying = document.getElementById('audio-icon-playing');
+  let isPlaying = false;
 
-  // --- THE MASTER PIN TIMELINE ---
-  const masterTl = gsap.timeline({
-    scrollTrigger: {
-      trigger: "#master-pin",
-      start: "top top",
-      end: "+=4500",
-      pin: true,
-      scrub: 1
+  audioBtn.addEventListener('click', () => {
+    if (isPlaying) {
+      ambientAudio.pause();
+      iconPlaying.style.display = 'none';
+      iconMuted.style.display = 'block';
+    } else {
+      ambientAudio.play();
+      iconMuted.style.display = 'none';
+      iconPlaying.style.display = 'block';
     }
+    isPlaying = !isPlaying;
   });
 
-  masterTl.to("#mask-text-group", {
-    scale: 150,
-    svgOrigin: "80 45",
-    ease: "power2.in",
-    duration: 1
-  }, 0)
+  const video = document.getElementById('gameplay-video');
+
+  // --- SCENE 1, 2, 3: MASTER PIN ---
+  const masterTl = gsap.timeline({
+    scrollTrigger: { trigger: "#master-pin", start: "top top", end: "+=4500", pin: true, scrub: 1 }
+  });
+
+  masterTl.to("#mask-text-group", { scale: 150, svgOrigin: "80 45", ease: "power2.in", duration: 1 }, 0)
     .to(bgMaterial.uniforms.uBrightness, { value: 12.0, duration: 1 }, 0)
     .to("#mask-container", { autoAlpha: 0, duration: 0.1 }, 1);
 
@@ -93,7 +102,7 @@ async function init() {
     .to("#shadow-narrative h2, #shadow-narrative .divider", { opacity: 0, duration: 0.5 }, 4.2);
 
   // --- SCENE 4: VIDEO ---
-  ScrollTrigger.create({
+  const videoTrigger = ScrollTrigger.create({
     trigger: "#step-video", start: "top top", end: "+=2000", pin: true, scrub: 1,
     onEnter: () => gsap.to(".video-container", { autoAlpha: 1, duration: 0.5 }),
     onLeave: () => gsap.to(".video-container", { autoAlpha: 0, duration: 0.5 }),
@@ -102,21 +111,16 @@ async function init() {
     onUpdate: (self) => { if (video.duration) video.currentTime = video.duration * self.progress; }
   });
 
-  // --- SCENE 4.5: POST-VIDEO NARRATIVE ---
+  // --- SCENE 4.5: POST-VIDEO ---
   const postVideoTl = gsap.timeline({
-    scrollTrigger: {
-      trigger: "#step-post-video", start: "top top", end: "+=1500", pin: true, scrub: true
-    }
+    scrollTrigger: { trigger: "#step-post-video", start: "top top", end: "+=1500", pin: true, scrub: true }
   });
-
   postVideoTl.to("#step-post-video h2, #step-post-video .divider", { opacity: 1, filter: "blur(0px)", duration: 0.5 }, 0.2);
-
   const postParas = document.querySelectorAll("#step-post-video .p-stage");
   if (postParas.length > 0) {
     postVideoTl.fromTo(postParas[0], { y: 20, autoAlpha: 0 }, { y: 0, autoAlpha: 1, duration: 0.5 }, 0.5)
       .to(postParas[0].querySelector('p'), { filter: "blur(0px)", duration: 0.5 }, 0.5)
       .to(postParas[0], { autoAlpha: 0, duration: 0.5 }, 1.2);
-
     if (postParas.length > 1) {
       postVideoTl.fromTo(postParas[1], { y: 20, autoAlpha: 0 }, { y: 0, autoAlpha: 1, duration: 0.5 }, 1.2)
         .to(postParas[1].querySelector('p'), { filter: "blur(0px)", duration: 0.5 }, 1.2)
@@ -125,7 +129,7 @@ async function init() {
     postVideoTl.to("#step-post-video h2, #step-post-video .divider", { opacity: 0, duration: 0.5 }, 2.0);
   }
 
-  // --- SCENE 5: SPIDER (Cinematic Fog Reveal) ---
+  // --- SCENE 5: SPIDER ---
   const finalTl = gsap.timeline({
     scrollTrigger: {
       trigger: "#step-final", start: "top top", end: "+=3000", pin: true, scrub: 1,
@@ -133,22 +137,58 @@ async function init() {
       onLeaveBack: () => { gsap.set(".video-container", { autoAlpha: 1 }); gsap.to("#spider-bg", { opacity: 0, duration: 0.5 }); }
     }
   });
-
   finalTl.to("#spider-img", { filter: "blur(0px) brightness(0.5) grayscale(100%)", duration: 3 }, 0);
   finalTl.to("#spider-img", { yPercent: 15, scale: 1.1, ease: "none", duration: 10 }, 0);
-
   document.querySelectorAll("#step-final .p-stage").forEach((p, i) => {
     finalTl.to(p, { autoAlpha: 1, duration: 2 }, (10 / 2) * i)
       .to(p.querySelector('p'), { filter: "blur(0px)", duration: 2 }, "-=2")
       .to(p, { autoAlpha: 0, duration: 2 }, "+=1");
   });
 
-  // --- SCENE 6: OUTRO ---
-  ScrollTrigger.create({
-    trigger: "#step-outro",
-    start: "top 60%", // Animates in right as it crosses the lower-middle of the screen
-    onEnter: () => gsap.fromTo(".outro-content", { autoAlpha: 0, y: 40 }, { autoAlpha: 1, y: 0, duration: 1.2, ease: "power2.out" }),
-    onLeaveBack: () => gsap.to(".outro-content", { autoAlpha: 0, y: 40, duration: 0.5 })
+  // --- SCENE 6: OUTRO & CUE HIDING ---
+  const outroTrigger = ScrollTrigger.create({
+    trigger: "#step-outro", start: "top 60%",
+    onEnter: () => {
+      gsap.fromTo(".outro-content", { autoAlpha: 0, y: 40 }, { autoAlpha: 1, y: 0, duration: 1.2, ease: "power2.out" });
+      gsap.to("#scroll-cue", { autoAlpha: 0, duration: 0.5 });
+    },
+    onLeaveBack: () => {
+      gsap.to(".outro-content", { autoAlpha: 0, y: 40, duration: 0.5 });
+      gsap.to("#scroll-cue", { autoAlpha: 1, duration: 0.5 });
+    }
+  });
+
+  // --- MENU NAVIGATION LOGIC (SAFELY AT THE BOTTOM) ---
+  const menuBtn = document.getElementById('menu-btn');
+  const fullMenu = document.getElementById('full-menu');
+  const navLinks = document.querySelectorAll('.nav-link');
+
+  menuBtn.addEventListener('click', () => {
+    menuBtn.classList.toggle('open');
+    fullMenu.classList.toggle('active');
+  });
+
+  const triggerMap = {
+    '#master-pin': masterTl.scrollTrigger,
+    '#step-video': videoTrigger,
+    '#step-post-video': postVideoTl.scrollTrigger,
+    '#step-final': finalTl.scrollTrigger,
+    '#step-outro': outroTrigger
+  };
+
+  navLinks.forEach(link => {
+    link.addEventListener('click', (e) => {
+      const targetId = e.target.getAttribute('data-target');
+
+      menuBtn.classList.remove('open');
+      fullMenu.classList.remove('active');
+
+      ScrollTrigger.refresh();
+      const trigger = triggerMap[targetId];
+      const scrollTarget = trigger ? trigger.start : targetId;
+
+      lenis.scrollTo(scrollTarget, { duration: 2, ease: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)) });
+    });
   });
 
   function animate() {
