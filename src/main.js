@@ -19,7 +19,6 @@ async function init() {
   renderer.setSize(window.innerWidth, window.innerHeight);
   document.getElementById('hero').appendChild(renderer.domElement);
 
-  // SHADER FIX: Re-introduced uRadius and uOffsetY to snuff out the light
   bgMaterial = new THREE.ShaderMaterial({
     uniforms: {
       uTime: { value: 0 },
@@ -36,10 +35,8 @@ async function init() {
       uniform float uRadius;
       uniform float uOffsetY;
       void main() { 
-        // Light moves dynamically, factoring in uOffsetY
         vec2 lp = vec2(sin(uTime*0.5)*40.0, cos(uTime*0.8)*20.0 + uOffsetY); 
         float d = distance(vPosition.xy, lp); 
-        // Radius controlled dynamically
         float l = smoothstep(uRadius, 0.0, d); 
         float i = (l + 0.15 + vUv.y*0.1) * uBrightness; 
         float w = clamp(uBrightness-1.5, 0.0, 1.0); 
@@ -61,37 +58,31 @@ async function init() {
     }
   });
 
-  // 1. THE ZOOM (0 to 1)
   masterTl.to("#mask-text-group", {
     scale: 150,
-    svgOrigin: "80 45", // THE FIX: Forces absolute SVG centering, bypassing CSS bugs.
+    svgOrigin: "80 45",
     ease: "power2.in",
     duration: 1
   }, 0)
     .to(bgMaterial.uniforms.uBrightness, { value: 12.0, duration: 1 }, 0)
     .to("#mask-container", { autoAlpha: 0, duration: 0.1 }, 1);
 
-  // 2. THE WHITE VOID (0.8 to 2.8)
   masterTl.to("#white-narrative h2, #white-narrative .divider", { opacity: 1, filter: "blur(0px)", duration: 0.5 }, 0.8);
 
   const whiteParas = document.querySelectorAll("#white-narrative .p-stage");
   masterTl.to(whiteParas[0], { autoAlpha: 1, duration: 0.5 }, 1.2)
     .to(whiteParas[0].querySelector('p'), { filter: "blur(0px)", duration: 0.5 }, 1.2)
     .to(whiteParas[0], { autoAlpha: 0, duration: 0.5 }, 2.0)
-
     .to(whiteParas[1], { autoAlpha: 1, duration: 0.5 }, 2.0)
     .to(whiteParas[1].querySelector('p'), { filter: "blur(0px)", duration: 0.5 }, 2.0)
     .to(whiteParas[1], { autoAlpha: 0, duration: 0.5 }, 2.8);
 
-  // 3. FADE TO SHADOW & KILL LIGHT (2.8 to 3.2)
-  // THE FIX: Animate radius to 0 and shift it offscreen to instantly kill the "dancing"
   masterTl.to(bgMaterial.uniforms.uBrightness, { value: 0.0, duration: 0.4, ease: "power2.inOut" }, 2.8)
-    .to(bgMaterial.uniforms.uOffsetY, { value: 100.0, duration: 0.4 }, 2.8) // Push light up
-    .to(bgMaterial.uniforms.uRadius, { value: 0.0, duration: 0.4 }, 2.8)    // Shrink light to zero
+    .to(bgMaterial.uniforms.uOffsetY, { value: 100.0, duration: 0.4 }, 2.8)
+    .to(bgMaterial.uniforms.uRadius, { value: 0.0, duration: 0.4 }, 2.8)
     .to("#white-narrative", { autoAlpha: 0, duration: 0.1 }, 3.0)
-    .to(renderer.domElement, { autoAlpha: 0, duration: 0.1 }, 3.2); // HARD KILL ThreeJS Canvas
+    .to(renderer.domElement, { autoAlpha: 0, duration: 0.1 }, 3.2);
 
-  // 4. THE SHADOW NARRATIVE (3.2 to 4.5)
   masterTl.to("#shadow-narrative", { autoAlpha: 1, duration: 0.1 }, 3.2)
     .to("#shadow-narrative h2, #shadow-narrative .divider", { opacity: 1, filter: "blur(0px)", duration: 0.5 }, 3.2);
 
@@ -105,23 +96,59 @@ async function init() {
   ScrollTrigger.create({
     trigger: "#step-video", start: "top top", end: "+=2000", pin: true, scrub: 1,
     onEnter: () => gsap.to(".video-container", { autoAlpha: 1, duration: 0.5 }),
+    onLeave: () => gsap.to(".video-container", { autoAlpha: 0, duration: 0.5 }),
+    onEnterBack: () => gsap.to(".video-container", { autoAlpha: 1, duration: 0.5 }),
     onLeaveBack: () => gsap.to(".video-container", { autoAlpha: 0, duration: 0.5 }),
     onUpdate: (self) => { if (video.duration) video.currentTime = video.duration * self.progress; }
   });
 
-  // --- SCENE 5: SPIDER ---
+  // --- SCENE 4.5: POST-VIDEO NARRATIVE ---
+  const postVideoTl = gsap.timeline({
+    scrollTrigger: {
+      trigger: "#step-post-video", start: "top top", end: "+=1500", pin: true, scrub: true
+    }
+  });
+
+  postVideoTl.to("#step-post-video h2, #step-post-video .divider", { opacity: 1, filter: "blur(0px)", duration: 0.5 }, 0.2);
+
+  const postParas = document.querySelectorAll("#step-post-video .p-stage");
+  if (postParas.length > 0) {
+    postVideoTl.fromTo(postParas[0], { y: 20, autoAlpha: 0 }, { y: 0, autoAlpha: 1, duration: 0.5 }, 0.5)
+      .to(postParas[0].querySelector('p'), { filter: "blur(0px)", duration: 0.5 }, 0.5)
+      .to(postParas[0], { autoAlpha: 0, duration: 0.5 }, 1.2);
+
+    if (postParas.length > 1) {
+      postVideoTl.fromTo(postParas[1], { y: 20, autoAlpha: 0 }, { y: 0, autoAlpha: 1, duration: 0.5 }, 1.2)
+        .to(postParas[1].querySelector('p'), { filter: "blur(0px)", duration: 0.5 }, 1.2)
+        .to(postParas[1], { autoAlpha: 0, duration: 0.5 }, 1.9);
+    }
+    postVideoTl.to("#step-post-video h2, #step-post-video .divider", { opacity: 0, duration: 0.5 }, 2.0);
+  }
+
+  // --- SCENE 5: SPIDER (Cinematic Fog Reveal) ---
   const finalTl = gsap.timeline({
     scrollTrigger: {
       trigger: "#step-final", start: "top top", end: "+=3000", pin: true, scrub: 1,
-      onEnter: () => { gsap.set(".video-container", { autoAlpha: 0 }); gsap.to("#spider-bg", { opacity: 1, duration: 1 }); },
+      onEnter: () => { gsap.set(".video-container", { autoAlpha: 0 }); gsap.to("#spider-bg", { opacity: 1, duration: 0.1 }); },
       onLeaveBack: () => { gsap.set(".video-container", { autoAlpha: 1 }); gsap.to("#spider-bg", { opacity: 0, duration: 0.5 }); }
     }
   });
+
+  finalTl.to("#spider-img", { filter: "blur(0px) brightness(0.5) grayscale(100%)", duration: 3 }, 0);
   finalTl.to("#spider-img", { yPercent: 15, scale: 1.1, ease: "none", duration: 10 }, 0);
+
   document.querySelectorAll("#step-final .p-stage").forEach((p, i) => {
     finalTl.to(p, { autoAlpha: 1, duration: 2 }, (10 / 2) * i)
       .to(p.querySelector('p'), { filter: "blur(0px)", duration: 2 }, "-=2")
       .to(p, { autoAlpha: 0, duration: 2 }, "+=1");
+  });
+
+  // --- SCENE 6: OUTRO ---
+  ScrollTrigger.create({
+    trigger: "#step-outro",
+    start: "top 60%", // Animates in right as it crosses the lower-middle of the screen
+    onEnter: () => gsap.fromTo(".outro-content", { autoAlpha: 0, y: 40 }, { autoAlpha: 1, y: 0, duration: 1.2, ease: "power2.out" }),
+    onLeaveBack: () => gsap.to(".outro-content", { autoAlpha: 0, y: 40, duration: 0.5 })
   });
 
   function animate() {

@@ -40,7 +40,7 @@ body {
   object-fit: cover;
   position: absolute;
   top: -20%;
-  filter: grayscale(100%) brightness(0.5);
+  filter: blur(40px) brightness(0) grayscale(100%);
 }
 
 /* --- SCROLL SYSTEM --- */
@@ -182,4 +182,55 @@ body {
 
 .corner-align .p-stage {
   text-align: right;
+}
+
+/* --- OUTRO SECTION --- */
+#step-outro {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: #000;
+  z-index: 90;
+  /* High enough to act as a curtain over the fixed layers */
+}
+
+.outro-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  opacity: 0;
+  /* GSAP will control this */
+}
+
+.outro-text {
+  font-size: 1rem;
+  letter-spacing: 3px;
+  color: #666;
+  text-transform: uppercase;
+  margin-bottom: 20px;
+}
+
+.playdead-logo {
+  width: 320px;
+  max-width: 80vw;
+  margin-bottom: 50px;
+  filter: drop-shadow(0px 0px 10px rgba(255, 255, 255, 0.1));
+}
+
+.cta-button {
+  padding: 16px 40px;
+  border: 2px solid #fff;
+  color: #fff;
+  text-decoration: none;
+  font-size: 1rem;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  transition: all 0.4s ease;
+  cursor: pointer;
+}
+
+.cta-button:hover {
+  background: #fff;
+  color: #000;
 }
