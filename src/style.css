@@ -1,0 +1,80 @@
+#hero {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100vh;
+  z-index: 1; /* Stay behind the scrollable content */
+  pointer-events: none;
+}
+
+.scroll-container {
+  position: relative;
+  z-index: 2;
+  /* Reduced from 1000vh to 400vh for a 2-3 scroll journey */
+  height: 400vh; 
+  background-color: transparent;
+}
+
+.spacer {
+  /* This is the zoom-in distance. 200vh = ~2 full mouse flicks */
+  height: 200vh; 
+}
+
+.description-section {
+  min-height: 200vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 0 10%;
+  background-color: transparent; /* Allows the Three.js white world to show through */
+}
+
+.content-wrapper {
+  max-width: 700px;
+  text-align: center;
+  opacity: 0;
+  visibility: hidden;
+  /* Dark grey/black to look like a silhouette against the white-out */
+  color: #111; 
+  font-family: 'Arial Black', sans-serif;
+}
+.content-wrapper h2 {
+  font-size: clamp(3rem, 10vw, 6rem);
+  text-transform: uppercase;
+  letter-spacing: -0.05em;
+  margin-bottom: 0.5rem;
+  line-height: 0.9;
+}
+.content-wrapper p {
+  font-size: 1.25rem;
+  line-height: 1.8;
+  font-weight: 500;
+  color: #333;
+  margin-bottom: 2rem;
+  letter-spacing: 0.02em;
+  /* Makes the text feel like it's part of an old film */
+  opacity: 0.8; 
+  max-width: 700px;
+  text-align: center;
+  color: #111;
+}
+
+.content-wrapper h2, 
+.content-wrapper p, 
+.divider {
+  filter: blur(20px); /* The "Fog" starts here */
+  transform: translateY(60px);
+  opacity: 0;
+  transition: none;
+}
+
+.divider {
+  width: 60px;
+  height: 4px;
+  background: #111;
+  margin: 30px auto; /* This creates the gap you were missing */
+  border-radius: 2px;
+  opacity: 0.8;
+}
