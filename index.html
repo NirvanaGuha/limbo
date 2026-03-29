@@ -9,22 +9,38 @@
 </head>
 
 <body>
+  <div id="preloader">
+    <div class="preloader-content">
+      <h1 class="preloader-title">LIMBO</h1>
+      <div class="preloader-bar">
+        <div class="preloader-progress"></div>
+      </div>
+    </div>
+  </div>
+
+  <div id="custom-cursor"></div>
+
   <audio id="ambient-audio" loop preload="auto">
     <source src="/limbo-bgm.webm" type="audio/webm">
   </audio>
 
-  <button id="audio-btn" aria-label="Toggle Audio">
-    <svg id="audio-icon-muted" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-      <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
-      <line x1="23" y1="9" x2="17" y2="15"></line>
-      <line x1="17" y1="9" x2="23" y2="15"></line>
-    </svg>
-    <svg id="audio-icon-playing" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-      style="display: none;">
-      <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
-      <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path>
-    </svg>
-  </button>
+  <div id="global-actions">
+    <button class="global-btn" id="global-portals">Get Game</button>
+    <button class="global-btn" id="global-soundscape">Soundtrack</button>
+
+    <button id="audio-btn" aria-label="Toggle Audio">
+      <svg id="audio-icon-muted" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+        <line x1="23" y1="9" x2="17" y2="15"></line>
+        <line x1="17" y1="9" x2="23" y2="15"></line>
+      </svg>
+      <svg id="audio-icon-playing" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+        style="display: none;">
+        <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+        <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+      </svg>
+    </button>
+  </div>
 
   <button id="menu-btn" aria-label="Toggle Menu">
     <div class="hamburger-line"></div>
@@ -40,6 +56,36 @@
       <li><button class="nav-link" data-target="#step-outro">05. Credits</button></li>
     </ul>
   </nav>
+
+  <div class="link-modal" id="modal-portals">
+    <button class="modal-close">Close</button>
+    <div class="modal-content">
+      <h3>The Portals</h3>
+      <div class="link-grid">
+        <a href="https://store.steampowered.com/app/48000/LIMBO/" target="_blank">Steam</a>
+        <a href="https://play.google.com/store/apps/details?id=com.playdead.limbo.full&hl=en_IN" target="_blank">Google
+          Play</a>
+        <a href="https://apps.apple.com/us/app/playdeads-limbo/id656951157" target="_blank">App Store</a>
+        <a href="https://www.playstation.com/en-in/games/limbo/" target="_blank">PlayStation</a>
+        <a href="https://www.xbox.com/en-IN/games/store/limbo/btqmhk78zpf9" target="_blank">Xbox</a>
+      </div>
+    </div>
+  </div>
+
+  <div class="link-modal" id="modal-soundscape">
+    <button class="modal-close">Close</button>
+    <div class="modal-content">
+      <h3>The Soundscape</h3>
+      <div class="link-grid">
+        <a href="https://open.spotify.com/album/06i5zPGRMQaAbDWq4ITNjj?autoplay=true" target="_blank">Spotify</a>
+        <a href="https://music.apple.com/in/album/limbo-original-videogame-soundtrack-ep/1109391252"
+          target="_blank">Apple Music</a>
+        <a href="https://music.youtube.com/playlist?list=OLAK5uy_nnsOVw_LlWsw4F_6jqGJb7rfVdmTgdHFU"
+          target="_blank">YouTube Music</a>
+        <a href="https://music.amazon.in/albums/B01EXNLVFC" target="_blank">Amazon Music</a>
+      </div>
+    </div>
+  </div>
 
   <div id="grain-overlay"></div>
 
@@ -79,18 +125,17 @@
       <div id="white-narrative" class="split-layout">
         <div class="left-col">
           <div class="content-wrapper" id="main-title">
-            <h2>The World<br>Between Worlds</h2>
+            <h2>The Edge<br>Of Hell</h2>
             <div class="divider"></div>
           </div>
         </div>
         <div class="right-col">
           <div class="p-stage">
-            <p>Limbo is a haunting, minimalist puzzle-platformer that follows a nameless boy as he ventures through a
-              dark, monochrome world.</p>
+            <p>Uncertain of his sister's fate, a boy enters Limbo.</p>
           </div>
           <div class="p-stage">
-            <p>Stark black-and-white visuals and ambient sound design create an experience where every step feels tense
-              and mysterious.</p>
+            <p>There are no guides here. No warnings. Only the crushing weight of the dark, and whatever waits for you
+              inside it.</p>
           </div>
         </div>
       </div>
@@ -150,7 +195,13 @@
       <div class="outro-content">
         <p class="outro-text">A masterpiece by</p>
         <img src="/pd_dark_v2_0.png" alt="Playdead Studios" class="playdead-logo">
-        <a href="https://playdead.com/games/limbo/" target="_blank" class="cta-button">Visit Playdead</a>
+
+        <div class="outro-buttons">
+          <button class="cta-button" id="btn-portals">The Portals</button>
+          <button class="cta-button" id="btn-soundscape">The Soundscape</button>
+        </div>
+
+        <a href="https://playdead.com/games/limbo/" target="_blank" class="pd-link">visit playdead.com</a>
       </div>
     </section>
 

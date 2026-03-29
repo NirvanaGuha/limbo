@@ -7,8 +7,17 @@ gsap.registerPlugin(ScrollTrigger);
 
 let scene, camera, renderer, bgMaterial, clock = new THREE.Clock();
 const lenis = new Lenis({ lerp: 0.08 });
-function raf(time) { lenis.raf(time); requestAnimationFrame(raf); }
-requestAnimationFrame(raf);
+
+// 1. Tell Lenis to trigger GSAP's scroll math every time it moves
+lenis.on('scroll', ScrollTrigger.update);
+
+// 2. Add Lenis's requestAnimationFrame to GSAP's internal ticker
+gsap.ticker.add((time) => {
+  lenis.raf(time * 1000); // GSAP runs in seconds, Lenis needs milliseconds
+});
+
+// 3. Prevent GSAP from trying to "catch up" on missed frames, which causes lag
+gsap.ticker.lagSmoothing(0);
 
 async function init() {
   scene = new THREE.Scene();
@@ -45,6 +54,56 @@ async function init() {
   });
   scene.add(new THREE.Mesh(new THREE.PlaneGeometry(300, 300), bgMaterial));
 
+  // --- PRELOADER LOGIC ---
+  const preloader = document.getElementById('preloader');
+  const progressLine = document.querySelector('.preloader-progress');
+
+  // 1. Lock the scroll wheel immediately
+  lenis.stop();
+
+  // 2. Simulate progress while the network works in the background
+  let loadAmount = 0;
+  const loadInterval = setInterval(() => {
+    loadAmount += Math.random() * 15;
+    if (loadAmount > 90) loadAmount = 90; // Hold at 90% until truly fully loaded
+    progressLine.style.width = `${loadAmount}%`;
+  }, 100);
+
+  // 3. Listen for the browser's absolute confirmation that all assets are ready
+  window.addEventListener('load', () => {
+    clearInterval(loadInterval);
+    progressLine.style.width = '100%'; // Snap to 100%
+
+    // Wait a tiny fraction of a second so the user registers the 100%, then fade out
+    setTimeout(() => {
+      preloader.classList.add('hidden');
+      lenis.start(); // Unlock the scroll wheel
+      ScrollTrigger.refresh(); // Tell GSAP to recalculate everything now that images are loaded
+    }, 600);
+  });
+
+  // --- CUSTOM CURSOR LOGIC ---
+  const cursor = document.getElementById('custom-cursor');
+
+  // Use GSAP's optimized quickTo for buttery smooth 60fps tracking
+  const xTo = gsap.quickTo(cursor, "x", { duration: 0.1, ease: "power3" });
+  const yTo = gsap.quickTo(cursor, "y", { duration: 0.1, ease: "power3" });
+
+  // Track mouse movement
+  window.addEventListener("mousemove", (e) => {
+    xTo(e.clientX);
+    yTo(e.clientY);
+  });
+
+  // Find all clickable elements (buttons and links)
+  const interactables = document.querySelectorAll('button, a, .nav-link');
+
+  // Add the expanding ring effect when hovering over them
+  interactables.forEach(el => {
+    el.addEventListener('mouseenter', () => cursor.classList.add('hover-active'));
+    el.addEventListener('mouseleave', () => cursor.classList.remove('hover-active'));
+  });
+
   // --- AUDIO LOGIC ---
   const audioBtn = document.getElementById('audio-btn');
   const ambientAudio = document.getElementById('ambient-audio');
@@ -63,6 +122,45 @@ async function init() {
       iconPlaying.style.display = 'block';
     }
     isPlaying = !isPlaying;
+  });
+
+  // --- MODAL SUB-MENU LOGIC ---
+  const modals = {
+    portals: document.getElementById('modal-portals'),
+    soundscape: document.getElementById('modal-soundscape')
+  };
+
+  const openModal = (id) => {
+    if (modals[id]) {
+      modals[id].classList.add('active');
+      lenis.stop(); // Pause smooth scrolling while modal is open
+    }
+  };
+
+  const closeModal = () => {
+    Object.values(modals).forEach(m => m && m.classList.remove('active'));
+    lenis.start(); // Resume smooth scrolling
+  };
+
+  // Outro Buttons
+  const btnPortals = document.getElementById('btn-portals');
+  const btnSoundscape = document.getElementById('btn-soundscape');
+  if (btnPortals) btnPortals.addEventListener('click', () => openModal('portals'));
+  if (btnSoundscape) btnSoundscape.addEventListener('click', () => openModal('soundscape'));
+
+  // Global Action Buttons
+  const globalPortals = document.getElementById('global-portals');
+  const globalSoundscape = document.getElementById('global-soundscape');
+  if (globalPortals) globalPortals.addEventListener('click', () => openModal('portals'));
+  if (globalSoundscape) globalSoundscape.addEventListener('click', () => openModal('soundscape'));
+
+  // Close Modals (clicking close button or background)
+  document.querySelectorAll('.link-modal, .modal-close').forEach(el => {
+    el.addEventListener('click', (e) => {
+      if (e.target.classList.contains('link-modal') || e.target.classList.contains('modal-close')) {
+        closeModal();
+      }
+    });
   });
 
   const video = document.getElementById('gameplay-video');
