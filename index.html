@@ -11,21 +11,6 @@
 <body>
   <div id="hero"></div>
 
-  <div id="mask-container">
-    <svg viewBox="0 0 160 90" preserveAspectRatio="xMidYMid slice">
-      <defs>
-        <mask id="limbo-mask" maskUnits="userSpaceOnUse">
-          <rect x="-100" y="-100" width="400" height="300" fill="white" />
-          <g id="mask-text-group">
-            <text x="80" y="45" dy=".35em" text-anchor="middle" dominant-baseline="middle" fill="black"
-              font-family="Arial Black" font-weight="900" font-size="18">LIMBO</text>
-          </g>
-        </mask>
-      </defs>
-      <rect id="black-wall" x="-100" y="-100" width="400" height="300" fill="black" mask="url(#limbo-mask)" />
-    </svg>
-  </div>
-
   <div class="video-container">
     <video id="gameplay-video" src="/jump-intra.mp4" preload="auto" muted playsinline></video>
   </div>
@@ -35,46 +20,58 @@
   </div>
 
   <div class="scroll-container">
-    <div id="intro-wrap">
-      <section class="step" id="step-zoom"></section>
 
-      <section class="step split-section" id="step-narrative">
-        <div class="split-layout">
-          <div class="left-col">
-            <div class="content-wrapper" id="main-title">
-              <h2>The World Between Worlds</h2>
-              <div class="divider"></div>
-            </div>
-          </div>
-          <div class="right-col">
-            <div class="p-stage">
-              <p>Limbo is a haunting, minimalist puzzle-platformer that follows a nameless boy as he ventures through a
-                dark, monochrome world.</p>
-            </div>
-            <div class="p-stage">
-              <p>Stark black-and-white visuals and ambient sound design create an experience where every step feels
-                tense and mysterious.</p>
-            </div>
+    <section class="step" id="master-pin">
+
+      <div id="mask-container">
+        <svg viewBox="0 0 160 90" preserveAspectRatio="xMidYMid slice">
+          <defs>
+            <mask id="limbo-mask" maskUnits="userSpaceOnUse">
+              <rect x="-100" y="-100" width="400" height="300" fill="white" />
+              <g id="mask-text-group">
+                <text x="80" y="45" dy=".35em" text-anchor="middle" dominant-baseline="middle" fill="black"
+                  font-family="Arial Black" font-weight="900" font-size="18">LIMBO</text>
+              </g>
+            </mask>
+          </defs>
+          <rect id="black-wall" x="-100" y="-100" width="400" height="300" fill="black" mask="url(#limbo-mask)" />
+        </svg>
+      </div>
+
+      <div id="white-narrative" class="split-layout">
+        <div class="left-col">
+          <div class="content-wrapper" id="main-title">
+            <h2>The World<br>Between Worlds</h2>
+            <div class="divider"></div>
           </div>
         </div>
-      </section>
-
-      <section class="step split-section dark-mode" id="step-shadow">
-        <div class="split-layout">
-          <div class="left-col">
-            <div class="content-wrapper">
-              <h2>The Weight of Silence</h2>
-              <div class="divider"></div>
-            </div>
+        <div class="right-col">
+          <div class="p-stage">
+            <p>Limbo is a haunting, minimalist puzzle-platformer that follows a nameless boy as he ventures through a
+              dark, monochrome world.</p>
           </div>
-          <div class="right-col">
-            <div class="p-stage">
-              <p>In the silence, the shadows begin to move. The deeper you go, the more the world pushes back.</p>
-            </div>
+          <div class="p-stage">
+            <p>Stark black-and-white visuals and ambient sound design create an experience where every step feels tense
+              and mysterious.</p>
           </div>
         </div>
-      </section>
-    </div>
+      </div>
+
+      <div id="shadow-narrative" class="split-layout dark-mode">
+        <div class="left-col">
+          <div class="content-wrapper">
+            <h2>The Weight<br>of Silence</h2>
+            <div class="divider"></div>
+          </div>
+        </div>
+        <div class="right-col">
+          <div class="p-stage">
+            <p>In the silence, the shadows begin to move. The deeper you go, the more the world pushes back.</p>
+          </div>
+        </div>
+      </div>
+
+    </section>
 
     <section class="step" id="step-video"></section>
 

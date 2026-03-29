@@ -19,79 +19,109 @@ async function init() {
   renderer.setSize(window.innerWidth, window.innerHeight);
   document.getElementById('hero').appendChild(renderer.domElement);
 
+  // SHADER FIX: Re-introduced uRadius and uOffsetY to snuff out the light
   bgMaterial = new THREE.ShaderMaterial({
-    uniforms: { uTime: { value: 0 }, uBrightness: { value: 1.0 } },
+    uniforms: {
+      uTime: { value: 0 },
+      uBrightness: { value: 1.0 },
+      uRadius: { value: 35.0 },
+      uOffsetY: { value: 0.0 }
+    },
     vertexShader: `varying vec2 vUv; varying vec3 vPosition; void main() { vUv = uv; vPosition = position; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`,
-    fragmentShader: `varying vec2 vUv; varying vec3 vPosition; uniform float uTime; uniform float uBrightness; void main() { vec2 lp = vec2(sin(uTime*0.5)*40.0, cos(uTime*0.8)*20.0); float d = distance(vPosition.xy, lp); float l = smoothstep(35.0, 0.0, d); float i = (l + 0.15 + vUv.y*0.1) * uBrightness; float w = clamp(uBrightness-1.5, 0.0, 1.0); gl_FragColor = vec4(mix(vec3(0.92, 0.95, 1.0)*i, vec3(1.0), w), 1.0); }`
+    fragmentShader: `
+      varying vec2 vUv; 
+      varying vec3 vPosition; 
+      uniform float uTime; 
+      uniform float uBrightness; 
+      uniform float uRadius;
+      uniform float uOffsetY;
+      void main() { 
+        // Light moves dynamically, factoring in uOffsetY
+        vec2 lp = vec2(sin(uTime*0.5)*40.0, cos(uTime*0.8)*20.0 + uOffsetY); 
+        float d = distance(vPosition.xy, lp); 
+        // Radius controlled dynamically
+        float l = smoothstep(uRadius, 0.0, d); 
+        float i = (l + 0.15 + vUv.y*0.1) * uBrightness; 
+        float w = clamp(uBrightness-1.5, 0.0, 1.0); 
+        gl_FragColor = vec4(mix(vec3(0.92, 0.95, 1.0)*i, vec3(1.0), w), 1.0); 
+      }`
   });
   scene.add(new THREE.Mesh(new THREE.PlaneGeometry(300, 300), bgMaterial));
 
   const video = document.getElementById('gameplay-video');
 
-  // --- CHAPTER 1, 2, & 2.5: THE LUMINANCE BRIDGE TIMELINE ---
-  const introTl = gsap.timeline({
+  // --- THE MASTER PIN TIMELINE ---
+  const masterTl = gsap.timeline({
     scrollTrigger: {
-      trigger: "#intro-wrap", start: "top top", end: "+=4500", pin: true, scrub: 0.1,
-      onLeave: () => gsap.set("#mask-container", { autoAlpha: 0 }),
-      onEnterBack: () => gsap.set("#mask-container", { autoAlpha: 1 })
+      trigger: "#master-pin",
+      start: "top top",
+      end: "+=4500",
+      pin: true,
+      scrub: 1
     }
   });
 
-  // 1. ZOOM & BRIGHTEN
-  introTl
-    .to("#mask-text-group", { scale: 400, transformOrigin: "50% 50%", duration: 1.5, ease: "power2.in" }, 0)
-    .to("#black-wall", { opacity: 0, duration: 0.8 }, 0.4)
-    .to(bgMaterial.uniforms.uBrightness, { value: 12.0, duration: 1 }, 0);
+  // 1. THE ZOOM (0 to 1)
+  masterTl.to("#mask-text-group", {
+    scale: 150,
+    svgOrigin: "80 45", // THE FIX: Forces absolute SVG centering, bypassing CSS bugs.
+    ease: "power2.in",
+    duration: 1
+  }, 0)
+    .to(bgMaterial.uniforms.uBrightness, { value: 12.0, duration: 1 }, 0)
+    .to("#mask-container", { autoAlpha: 0, duration: 0.1 }, 1);
 
-  // 2. WHITE VOID NARRATIVE
-  introTl.to("#step-narrative h2, #step-narrative .divider", { opacity: 1, filter: "blur(0px)", duration: 1.2 }, 1.1);
-  document.querySelectorAll("#step-narrative .p-stage").forEach((p, i) => {
-    introTl.to(p, { autoAlpha: 1, duration: 1.2 }, `+=${i === 0 ? 0.2 : 0.5}`)
-      .to(p.querySelector('p'), { filter: "blur(0px)", duration: 1.2 }, "-=1.2")
-      .to(p, { autoAlpha: 0, y: -40, duration: 1.2 }, "+=1"); // Float Up & Out
-  });
+  // 2. THE WHITE VOID (0.8 to 2.8)
+  masterTl.to("#white-narrative h2, #white-narrative .divider", { opacity: 1, filter: "blur(0px)", duration: 0.5 }, 0.8);
 
-  // 3. THE BRIDGE: RAMP DOWN BRIGHTNESS
-  introTl.to(bgMaterial.uniforms.uBrightness, { value: 0.0, duration: 1.5 }, ">-0.5");
+  const whiteParas = document.querySelectorAll("#white-narrative .p-stage");
+  masterTl.to(whiteParas[0], { autoAlpha: 1, duration: 0.5 }, 1.2)
+    .to(whiteParas[0].querySelector('p'), { filter: "blur(0px)", duration: 0.5 }, 1.2)
+    .to(whiteParas[0], { autoAlpha: 0, duration: 0.5 }, 2.0)
 
-  // 4. SHADOW BRIDGE NARRATIVE
-  introTl.to("#step-shadow h2, #step-shadow .divider", { opacity: 1, filter: "blur(0px)", duration: 1.2 }, ">-0.5");
-  document.querySelectorAll("#step-shadow .p-stage").forEach((p) => {
-    introTl.fromTo(p, { y: 40, autoAlpha: 0 }, { y: 0, autoAlpha: 1, duration: 1.2 }) // Float Up & In
-      .to(p.querySelector('p'), { filter: "blur(0px)", duration: 1.2 }, "-=1.2")
-      .to(p, { autoAlpha: 0, duration: 1.2 }, "+=1.5");
-  });
+    .to(whiteParas[1], { autoAlpha: 1, duration: 0.5 }, 2.0)
+    .to(whiteParas[1].querySelector('p'), { filter: "blur(0px)", duration: 0.5 }, 2.0)
+    .to(whiteParas[1], { autoAlpha: 0, duration: 0.5 }, 2.8);
 
-  // --- CHAPTER 3: VIDEO (Fade Entrance) ---
+  // 3. FADE TO SHADOW & KILL LIGHT (2.8 to 3.2)
+  // THE FIX: Animate radius to 0 and shift it offscreen to instantly kill the "dancing"
+  masterTl.to(bgMaterial.uniforms.uBrightness, { value: 0.0, duration: 0.4, ease: "power2.inOut" }, 2.8)
+    .to(bgMaterial.uniforms.uOffsetY, { value: 100.0, duration: 0.4 }, 2.8) // Push light up
+    .to(bgMaterial.uniforms.uRadius, { value: 0.0, duration: 0.4 }, 2.8)    // Shrink light to zero
+    .to("#white-narrative", { autoAlpha: 0, duration: 0.1 }, 3.0)
+    .to(renderer.domElement, { autoAlpha: 0, duration: 0.1 }, 3.2); // HARD KILL ThreeJS Canvas
+
+  // 4. THE SHADOW NARRATIVE (3.2 to 4.5)
+  masterTl.to("#shadow-narrative", { autoAlpha: 1, duration: 0.1 }, 3.2)
+    .to("#shadow-narrative h2, #shadow-narrative .divider", { opacity: 1, filter: "blur(0px)", duration: 0.5 }, 3.2);
+
+  const shadowParas = document.querySelectorAll("#shadow-narrative .p-stage");
+  masterTl.fromTo(shadowParas[0], { y: 20, autoAlpha: 0 }, { y: 0, autoAlpha: 1, duration: 0.5 }, 3.5)
+    .to(shadowParas[0].querySelector('p'), { filter: "blur(0px)", duration: 0.5 }, 3.5)
+    .to(shadowParas[0], { autoAlpha: 0, duration: 0.5 }, 4.2)
+    .to("#shadow-narrative h2, #shadow-narrative .divider", { opacity: 0, duration: 0.5 }, 4.2);
+
+  // --- SCENE 4: VIDEO ---
   ScrollTrigger.create({
-    trigger: "#step-video", start: "top top", end: "+=3000", pin: true, scrub: 1,
-    onEnter: () => {
-      // Fade in video container (already at x:0) and turn off shader
-      gsap.fromTo(".video-container", { autoAlpha: 0, x: 0 }, { autoAlpha: 1, duration: 1.2 });
-      gsap.to("#hero", { autoAlpha: 0 });
-    },
-    onLeaveBack: () => {
-      gsap.to(".video-container", { autoAlpha: 0, duration: 0.8 });
-      gsap.to("#hero", { autoAlpha: 1 });
-    },
+    trigger: "#step-video", start: "top top", end: "+=2000", pin: true, scrub: 1,
+    onEnter: () => gsap.to(".video-container", { autoAlpha: 1, duration: 0.5 }),
+    onLeaveBack: () => gsap.to(".video-container", { autoAlpha: 0, duration: 0.5 }),
     onUpdate: (self) => { if (video.duration) video.currentTime = video.duration * self.progress; }
   });
 
-  // --- CHAPTER 4: SPIDER FOREST ---
+  // --- SCENE 5: SPIDER ---
   const finalTl = gsap.timeline({
     scrollTrigger: {
-      trigger: "#step-final", start: "top top", end: "+=3500", pin: true, scrub: 1,
-      onEnter: () => { gsap.set(".video-container", { autoAlpha: 0 }); gsap.to("#spider-bg", { autoAlpha: 1, duration: 1 }); },
-      onLeaveBack: () => { gsap.set(".video-container", { autoAlpha: 1 }); gsap.to("#spider-bg", { autoAlpha: 0 }); }
+      trigger: "#step-final", start: "top top", end: "+=3000", pin: true, scrub: 1,
+      onEnter: () => { gsap.set(".video-container", { autoAlpha: 0 }); gsap.to("#spider-bg", { opacity: 1, duration: 1 }); },
+      onLeaveBack: () => { gsap.set(".video-container", { autoAlpha: 1 }); gsap.to("#spider-bg", { opacity: 0, duration: 0.5 }); }
     }
   });
-
-  finalTl.to("#spider-img", { yPercent: 20, scale: 1.3, ease: "none", duration: 10 }, 0);
+  finalTl.to("#spider-img", { yPercent: 15, scale: 1.1, ease: "none", duration: 10 }, 0);
   document.querySelectorAll("#step-final .p-stage").forEach((p, i) => {
-    const startTime = (10 / 2) * i;
-    finalTl.to(p, { autoAlpha: 1, duration: 2 }, startTime)
+    finalTl.to(p, { autoAlpha: 1, duration: 2 }, (10 / 2) * i)
       .to(p.querySelector('p'), { filter: "blur(0px)", duration: 2 }, "-=2")
-      .to(p, { autoAlpha: 0, duration: 2 }, "+=1.5");
+      .to(p, { autoAlpha: 0, duration: 2 }, "+=1");
   });
 
   function animate() {
