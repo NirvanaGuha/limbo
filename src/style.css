@@ -3,78 +3,61 @@ body {
   background: #000;
   font-family: 'Arial Black', sans-serif;
   overflow-x: hidden;
+  color: #000;
 }
 
-/* --- LAYERS --- */
-#hero {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100vw;
-  height: 100vh;
-  z-index: 5;
-  pointer-events: none;
-}
-
-#mask-container {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100vw;
-  height: 100vh;
-  z-index: 100;
-  pointer-events: none;
-}
-
-#mask-container svg {
-  display: block;
-  /* Removes the "baseline" white space */
-  width: 100vw;
-  height: 100vh;
-  /* Use object-fit to ensure the 16:9 box always fills the screen */
-  object-fit: cover;
-}
-
-/* Ensure no scroll-leaks from the hero layer */
-#hero canvas {
-  display: block;
-}
-
+/* --- MASTER LAYERS --- */
+#hero,
+#mask-container,
+#spider-bg,
 .video-container {
   position: fixed;
   top: 0;
   left: 0;
   width: 100vw;
   height: 100vh;
-  z-index: 80;
-  transform: translateX(100%);
-  background: #000;
+  pointer-events: none;
 }
 
-/* CHAPTER 4: SPIDER BG */
+#hero {
+  z-index: 5;
+}
+
 #spider-bg {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100vw;
-  height: 100vh;
   z-index: 15;
   opacity: 0;
   background: #000;
   overflow: hidden;
 }
 
+.video-container {
+  z-index: 80;
+  transform: translateX(100%);
+  background: #000;
+  opacity: 0;
+}
+
+#mask-container {
+  z-index: 100;
+}
+
+#mask-container svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
 #spider-img {
   width: 100%;
-  height: 150%;
-  /* 50% extra height for more parallax travel */
+  height: 140%;
   object-fit: cover;
   position: absolute;
-  top: -25%;
-  /* Start offset for downward travel */
+  top: -20%;
   filter: grayscale(100%) brightness(0.5);
 }
 
+/* --- SCROLL LOGIC --- */
 .scroll-container {
   position: relative;
   z-index: 50;
@@ -86,7 +69,26 @@ body {
   position: relative;
 }
 
-/* --- GRID LAYOUT (The Drift Fix) --- */
+#intro-wrap {
+  position: relative;
+  width: 100vw;
+}
+
+#step-narrative,
+#step-shadow {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 60;
+}
+
+#step-shadow {
+  z-index: 65;
+}
+
+/* --- GRID SYSTEM --- */
 .split-section {
   display: block !important;
 }
@@ -106,33 +108,30 @@ body {
 }
 
 .left-col h2 {
-  font-size: 6rem;
+  font-size: clamp(3rem, 6vw, 6rem);
   line-height: 0.9;
-  color: #000;
+  text-transform: uppercase;
   opacity: 0;
-  margin: 0;
+  filter: blur(20px);
 }
 
 .divider {
   width: 100px;
   height: 8px;
-  background: #000;
+  background: currentColor;
   margin-top: 25px;
   opacity: 0;
 }
 
-/* NARRATIVE GRID (The Drift Killer) */
 .right-col {
   position: relative;
   display: grid !important;
   place-items: center;
-  /* Centers the stack in the column */
-  height: 100vh;
+  align-content: center;
 }
 
 .p-stage {
   grid-area: 1 / 1 / 2 / 2;
-  /* All paragraphs occupy exactly the same grid cell */
   width: 80%;
   opacity: 0;
   pointer-events: none;
@@ -140,28 +139,31 @@ body {
 
 .p-stage p {
   font-size: 1.4rem;
-  color: #000;
+  line-height: 1.6;
   filter: blur(20px);
   margin: 0;
 }
 
-/* --- FINALE ALIGNMENT --- */
-.corner-align {
-  justify-items: end !important;
-  /* Pulls the grid stack to the right */
-  padding-right: 10%;
+/* --- DARK MODE TRANSITION & FINALE --- */
+.dark-mode {
+  background: transparent !important;
 }
 
-.corner-align .p-stage {
-  text-align: right;
+.dark-mode .left-col h2,
+.dark-mode .p-stage p {
+  color: #aaa !important;
+  /* Muted grey for shadow buffer eye comfort */
+}
+
+#step-final .left-col h2,
+#step-final .p-stage p {
+  color: #fff !important;
+  /* Pure white back for the finale */
 }
 
 .dark-mode .right-col {
   justify-items: end !important;
-  /* Pulls the stack to the right edge */
   padding-right: 10%;
-  align-items: center !important;
-  /* Centers it vertically */
 }
 
 .dark-mode .p-stage {

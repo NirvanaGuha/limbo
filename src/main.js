@@ -11,7 +11,6 @@ function raf(time) { lenis.raf(time); requestAnimationFrame(raf); }
 requestAnimationFrame(raf);
 
 async function init() {
-  // --- THREE.JS SETUP ---
   scene = new THREE.Scene();
   const aspect = window.innerWidth / window.innerHeight;
   camera = new THREE.OrthographicCamera(-30 * aspect, 30 * aspect, 30, -30, 0.1, 1000);
@@ -29,78 +28,67 @@ async function init() {
 
   const video = document.getElementById('gameplay-video');
 
-  // CHAPTER 1: THE ZOOM
-  gsap.timeline({
+  // --- CHAPTER 1, 2, & 2.5: THE LUMINANCE BRIDGE TIMELINE ---
+  const introTl = gsap.timeline({
     scrollTrigger: {
-      trigger: "#step-zoom", start: "top top", end: "+=1500", pin: true, scrub: 1,
+      trigger: "#intro-wrap", start: "top top", end: "+=4500", pin: true, scrub: 0.1,
       onLeave: () => gsap.set("#mask-container", { autoAlpha: 0 }),
       onEnterBack: () => gsap.set("#mask-container", { autoAlpha: 1 })
     }
-  }).to("#mask-text-group", { scale: 300, transformOrigin: "50% 50%", duration: 1, ease: "power3.in" }, 0)
-    .to("#black-wall", { opacity: 0, duration: 0.5 }, 0.5)
-    .to(bgMaterial.uniforms.uBrightness, { value: 10.0, duration: 1 }, 0);
-
-  // CHAPTER 2: NARRATIVE
-  const narrTl = gsap.timeline({
-    scrollTrigger: { trigger: "#step-narrative", start: "top top", end: "+=2500", pin: true, scrub: 1, snap: [0, 0.3, 0.6, 1] }
-  });
-  narrTl.to("#main-title h2, #main-title .divider", { opacity: 1, filter: "blur(0px)", y: 0, duration: 1 });
-  document.querySelectorAll("#step-narrative .p-stage").forEach((p) => {
-    narrTl.to(p, { autoAlpha: 1, duration: 1 }, "+=0.2").to(p.querySelector('p'), { filter: "blur(0px)", duration: 1 }, "-=1").to(p, { autoAlpha: 0, duration: 1 }, "+=1");
   });
 
-  // CHAPTER 3: VIDEO (The "Exit Strategy" Fix)
+  // 1. ZOOM & BRIGHTEN
+  introTl
+    .to("#mask-text-group", { scale: 400, transformOrigin: "50% 50%", duration: 1.5, ease: "power2.in" }, 0)
+    .to("#black-wall", { opacity: 0, duration: 0.8 }, 0.4)
+    .to(bgMaterial.uniforms.uBrightness, { value: 12.0, duration: 1 }, 0);
+
+  // 2. WHITE VOID NARRATIVE
+  introTl.to("#step-narrative h2, #step-narrative .divider", { opacity: 1, filter: "blur(0px)", duration: 1.2 }, 1.1);
+  document.querySelectorAll("#step-narrative .p-stage").forEach((p, i) => {
+    introTl.to(p, { autoAlpha: 1, duration: 1.2 }, `+=${i === 0 ? 0.2 : 0.5}`)
+      .to(p.querySelector('p'), { filter: "blur(0px)", duration: 1.2 }, "-=1.2")
+      .to(p, { autoAlpha: 0, y: -40, duration: 1.2 }, "+=1"); // Float Up & Out
+  });
+
+  // 3. THE BRIDGE: RAMP DOWN BRIGHTNESS
+  introTl.to(bgMaterial.uniforms.uBrightness, { value: 0.0, duration: 1.5 }, ">-0.5");
+
+  // 4. SHADOW BRIDGE NARRATIVE
+  introTl.to("#step-shadow h2, #step-shadow .divider", { opacity: 1, filter: "blur(0px)", duration: 1.2 }, ">-0.5");
+  document.querySelectorAll("#step-shadow .p-stage").forEach((p) => {
+    introTl.fromTo(p, { y: 40, autoAlpha: 0 }, { y: 0, autoAlpha: 1, duration: 1.2 }) // Float Up & In
+      .to(p.querySelector('p'), { filter: "blur(0px)", duration: 1.2 }, "-=1.2")
+      .to(p, { autoAlpha: 0, duration: 1.2 }, "+=1.5");
+  });
+
+  // --- CHAPTER 3: VIDEO (Fade Entrance) ---
   ScrollTrigger.create({
     trigger: "#step-video", start: "top top", end: "+=3000", pin: true, scrub: 1,
     onEnter: () => {
-      gsap.to(".video-container", { x: 0, autoAlpha: 1, duration: 0.8 });
+      // Fade in video container (already at x:0) and turn off shader
+      gsap.fromTo(".video-container", { autoAlpha: 0, x: 0 }, { autoAlpha: 1, duration: 1.2 });
       gsap.to("#hero", { autoAlpha: 0 });
     },
     onLeaveBack: () => {
-      // The crucial fix: Move video out and show hero again
-      gsap.to(".video-container", { x: "100%", autoAlpha: 0, duration: 0.8 });
+      gsap.to(".video-container", { autoAlpha: 0, duration: 0.8 });
       gsap.to("#hero", { autoAlpha: 1 });
     },
     onUpdate: (self) => { if (video.duration) video.currentTime = video.duration * self.progress; }
   });
 
-  // CHAPTER 4: THE SPIDER FOREST
+  // --- CHAPTER 4: SPIDER FOREST ---
   const finalTl = gsap.timeline({
     scrollTrigger: {
-      trigger: "#step-final",
-      start: "top top",
-      end: "+=4000", // Longer distance = slower, heavier scroll
-      pin: true,
-      scrub: 1,
-      snap: [0.1, 0.5, 0.9], // Snaps to Paragraph 1, Paragraph 2, or Exit
-      onEnter: () => {
-        gsap.set(".video-container", { autoAlpha: 0 });
-        gsap.to("#spider-bg", { autoAlpha: 1, duration: 1 });
-      },
-      onLeaveBack: () => {
-        gsap.set(".video-container", { autoAlpha: 1 });
-        gsap.to("#spider-bg", { autoAlpha: 0, duration: 0.5 });
-      }
+      trigger: "#step-final", start: "top top", end: "+=3500", pin: true, scrub: 1,
+      onEnter: () => { gsap.set(".video-container", { autoAlpha: 0 }); gsap.to("#spider-bg", { autoAlpha: 1, duration: 1 }); },
+      onLeaveBack: () => { gsap.set(".video-container", { autoAlpha: 1 }); gsap.to("#spider-bg", { autoAlpha: 0 }); }
     }
   });
 
-  // THE PARALLAX FIX: 
-  // We use the total duration of the timeline to ensure the move spans the whole scroll.
-  const totalSteps = 10; // We define a length for the background move
-
-  finalTl.to("#spider-img", {
-    yPercent: 20,      // Move the image down
-    scale: 1.25,      // Loom closer
-    ease: "none",
-    duration: totalSteps // Stretch this move across the entire sequence
-  }, 0);
-
-  // Overlay the text fades on top of the moving background
-  const finalParas = document.querySelectorAll("#step-final .p-stage");
-  finalParas.forEach((p, i) => {
-    // We calculate the start time based on the "totalSteps" duration
-    const startTime = (totalSteps / finalParas.length) * i;
-
+  finalTl.to("#spider-img", { yPercent: 20, scale: 1.3, ease: "none", duration: 10 }, 0);
+  document.querySelectorAll("#step-final .p-stage").forEach((p, i) => {
+    const startTime = (10 / 2) * i;
     finalTl.to(p, { autoAlpha: 1, duration: 2 }, startTime)
       .to(p.querySelector('p'), { filter: "blur(0px)", duration: 2 }, "-=2")
       .to(p, { autoAlpha: 0, duration: 2 }, "+=1.5");
