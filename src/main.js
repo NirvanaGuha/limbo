@@ -2,169 +2,115 @@ import * as THREE from 'three';
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import Lenis from 'lenis';
-import { FontLoader } from 'three/examples/jsm/loaders/FontLoader.js';
 
 gsap.registerPlugin(ScrollTrigger);
 
-// 1. GLOBAL VARIABLES
-let scene, camera, renderer, material, bgMaterial, mesh, clock;
-clock = new THREE.Clock();
-
-// 2. SHADERS (Positioning and Lighting logic)
-const vertexShader = `
-  varying vec2 vUv;
-  varying vec3 vPosition;
-  void main() {
-    vUv = uv;
-    vPosition = position;
-    gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-  }
-`;
-
-const fragmentShader = `
-  varying vec2 vUv;
-  varying vec3 vPosition;
-  uniform float uTime;
-  uniform float uBrightness;
-
-  void main() {
-    // Spotlight position drifting in the void
-    vec2 lightPos = vec2(sin(uTime * 0.5) * 40.0, cos(uTime * 0.8) * 20.0);
-    float dist = distance(vPosition.xy, lightPos);
-    float light = smoothstep(35.0, 0.0, dist);
-    
-    // Base visuals (Ambient + Vertical Sheen)
-    float intensity = (light + 0.15 + vUv.y * 0.1) * uBrightness;
-    
-    // Blinding white-out logic (Mixes spotlight into pure white)
-    float wash = clamp(uBrightness - 1.5, 0.0, 1.0);
-    vec3 baseColor = vec3(0.92, 0.95, 1.0); 
-    vec3 finalColor = mix(baseColor * intensity, vec3(1.0), wash);
-    
-    gl_FragColor = vec4(clamp(finalColor, 0.0, 1.0), 1.0);
-  }
-`;
-
-// 3. LENIS SETUP (Aggressive Scroll)
-const lenis = new Lenis({
-  lerp: 0.1,
-  wheelMultiplier: 1.2, // Increases scroll speed per flick
-  normalizeWheel: true,
-  smoothWheel: true,
-});
-
-lenis.on('scroll', ScrollTrigger.update);
-gsap.ticker.add((time) => {
-  lenis.raf(time * 1000);
-});
+let scene, camera, renderer, bgMaterial, clock = new THREE.Clock();
+const lenis = new Lenis({ lerp: 0.08 });
+function raf(time) { lenis.raf(time); requestAnimationFrame(raf); }
+requestAnimationFrame(raf);
 
 async function init() {
+  // --- THREE.JS SETUP ---
   scene = new THREE.Scene();
-  scene.background = new THREE.Color(0x000000);
-
-  // 4. ORTHOGRAPHIC CAMERA (The "Flat" Lens)
   const aspect = window.innerWidth / window.innerHeight;
-  const d = 30; // Viewport size
-  camera = new THREE.OrthographicCamera(-d * aspect, d * aspect, d, -d, 0.1, 1000);
-  camera.position.set(0, 0, 100);
-
+  camera = new THREE.OrthographicCamera(-30 * aspect, 30 * aspect, 30, -30, 0.1, 1000);
+  camera.position.z = 100;
   renderer = new THREE.WebGLRenderer({ antialias: true });
   renderer.setSize(window.innerWidth, window.innerHeight);
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
   document.getElementById('hero').appendChild(renderer.domElement);
 
-  // 5. BACKGROUND PLANE (The world on the other side)
   bgMaterial = new THREE.ShaderMaterial({
-    uniforms: { uTime: { value: 0 }, uBrightness: { value: 0.0 } },
-    vertexShader,
-    fragmentShader,
+    uniforms: { uTime: { value: 0 }, uBrightness: { value: 1.0 } },
+    vertexShader: `varying vec2 vUv; varying vec3 vPosition; void main() { vUv = uv; vPosition = position; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`,
+    fragmentShader: `varying vec2 vUv; varying vec3 vPosition; uniform float uTime; uniform float uBrightness; void main() { vec2 lp = vec2(sin(uTime*0.5)*40.0, cos(uTime*0.8)*20.0); float d = distance(vPosition.xy, lp); float l = smoothstep(35.0, 0.0, d); float i = (l + 0.15 + vUv.y*0.1) * uBrightness; float w = clamp(uBrightness-1.5, 0.0, 1.0); gl_FragColor = vec4(mix(vec3(0.92, 0.95, 1.0)*i, vec3(1.0), w), 1.0); }`
   });
-  const bgMesh = new THREE.Mesh(new THREE.PlaneGeometry(3000, 3000), bgMaterial);
-  bgMesh.position.z = -50; 
-  scene.add(bgMesh);
+  scene.add(new THREE.Mesh(new THREE.PlaneGeometry(300, 300), bgMaterial));
 
-  const fontLoader = new FontLoader();
-  fontLoader.load('https://threejs.org/examples/fonts/helvetiker_bold.typeface.json', (font) => {
-    
-    // Create Flat 2D Shape Text
-    const shapes = font.generateShapes('LIMBO', 15);
-    const geometry = new THREE.ShapeGeometry(shapes);
-    geometry.center(); 
+  const video = document.getElementById('gameplay-video');
 
-    material = new THREE.ShaderMaterial({
-      uniforms: { uTime: { value: 0 }, uBrightness: { value: 1.0 } },
-      vertexShader,
-      fragmentShader
-    });
+  // CHAPTER 1: THE ZOOM
+  gsap.timeline({
+    scrollTrigger: {
+      trigger: "#step-zoom", start: "top top", end: "+=1500", pin: true, scrub: 1,
+      onLeave: () => gsap.set("#mask-container", { autoAlpha: 0 }),
+      onEnterBack: () => gsap.set("#mask-container", { autoAlpha: 1 })
+    }
+  }).to("#mask-text-group", { scale: 300, transformOrigin: "50% 50%", duration: 1, ease: "power3.in" }, 0)
+    .to("#black-wall", { opacity: 0, duration: 0.5 }, 0.5)
+    .to(bgMaterial.uniforms.uBrightness, { value: 10.0, duration: 1 }, 0);
 
-    mesh = new THREE.Mesh(geometry, material);
-    scene.add(mesh);
+  // CHAPTER 2: NARRATIVE
+  const narrTl = gsap.timeline({
+    scrollTrigger: { trigger: "#step-narrative", start: "top top", end: "+=2500", pin: true, scrub: 1, snap: [0, 0.3, 0.6, 1] }
+  });
+  narrTl.to("#main-title h2, #main-title .divider", { opacity: 1, filter: "blur(0px)", y: 0, duration: 1 });
+  document.querySelectorAll("#step-narrative .p-stage").forEach((p) => {
+    narrTl.to(p, { autoAlpha: 1, duration: 1 }, "+=0.2").to(p.querySelector('p'), { filter: "blur(0px)", duration: 1 }, "-=1").to(p, { autoAlpha: 0, duration: 1 }, "+=1");
+  });
 
-    // 6. THE AGGRESSIVE TIMELINE (The 2-Scroll Journey)
-    const tl = gsap.timeline({
-      scrollTrigger: {
-        trigger: ".scroll-container",
-        start: "top top",
-        end: "bottom bottom",
-        scrub: 0.5, // Tight response to the wheel
+  // CHAPTER 3: VIDEO (The "Exit Strategy" Fix)
+  ScrollTrigger.create({
+    trigger: "#step-video", start: "top top", end: "+=3000", pin: true, scrub: 1,
+    onEnter: () => {
+      gsap.to(".video-container", { x: 0, autoAlpha: 1, duration: 0.8 });
+      gsap.to("#hero", { autoAlpha: 0 });
+    },
+    onLeaveBack: () => {
+      // The crucial fix: Move video out and show hero again
+      gsap.to(".video-container", { x: "100%", autoAlpha: 0, duration: 0.8 });
+      gsap.to("#hero", { autoAlpha: 1 });
+    },
+    onUpdate: (self) => { if (video.duration) video.currentTime = video.duration * self.progress; }
+  });
+
+  // CHAPTER 4: THE SPIDER FOREST
+  const finalTl = gsap.timeline({
+    scrollTrigger: {
+      trigger: "#step-final",
+      start: "top top",
+      end: "+=4000", // Longer distance = slower, heavier scroll
+      pin: true,
+      scrub: 1,
+      snap: [0.1, 0.5, 0.9], // Snaps to Paragraph 1, Paragraph 2, or Exit
+      onEnter: () => {
+        gsap.set(".video-container", { autoAlpha: 0 });
+        gsap.to("#spider-bg", { autoAlpha: 1, duration: 1 });
+      },
+      onLeaveBack: () => {
+        gsap.set(".video-container", { autoAlpha: 1 });
+        gsap.to("#spider-bg", { autoAlpha: 0, duration: 0.5 });
       }
-    });
-
-    // BEAT 1: The Exponential Zoom
-    tl.to(mesh.scale, { 
-      x: 600, 
-      y: 600, 
-      ease: "power4.in", // Fast explosion through the screen
-      duration: 2 
-    }, 0)
-
-    // BEAT 2: The White-Out Flash
-    .to(bgMaterial.uniforms.uBrightness, { 
-      value: 15.0, 
-      ease: "power2.out",
-      duration: 1.5
-    }, 0.5) // Overlaps with the zoom
-
-    // BEAT 3: The Cinematic Reveal
-    // 1. First, make the container visible
-    tl.to(".content-wrapper", {
-      autoAlpha: 1,
-      duration: 2,
-    }, "-=0.2")
-
-    // 2. The Fog Lift (Staggered)
-    // We target the children directly to clear the blur and the Y-position
-    .to(".content-wrapper h2, .divider, .content-wrapper p", {
-      filter: "blur(0px)",
-      y: 0,
-      opacity: 1,
-      stagger: 0.4,      // Each element clears its fog 0.2s after the last
-      duration: 2,
-      ease: "sine.inOut"
-    }, "+=0.5"); // Starts slightly before the container is fully opaque
+    }
   });
 
-  window.addEventListener('resize', onWindowResize);
+  // THE PARALLAX FIX: 
+  // We use the total duration of the timeline to ensure the move spans the whole scroll.
+  const totalSteps = 10; // We define a length for the background move
+
+  finalTl.to("#spider-img", {
+    yPercent: 20,      // Move the image down
+    scale: 1.25,      // Loom closer
+    ease: "none",
+    duration: totalSteps // Stretch this move across the entire sequence
+  }, 0);
+
+  // Overlay the text fades on top of the moving background
+  const finalParas = document.querySelectorAll("#step-final .p-stage");
+  finalParas.forEach((p, i) => {
+    // We calculate the start time based on the "totalSteps" duration
+    const startTime = (totalSteps / finalParas.length) * i;
+
+    finalTl.to(p, { autoAlpha: 1, duration: 2 }, startTime)
+      .to(p.querySelector('p'), { filter: "blur(0px)", duration: 2 }, "-=2")
+      .to(p, { autoAlpha: 0, duration: 2 }, "+=1.5");
+  });
+
+  function animate() {
+    requestAnimationFrame(animate);
+    bgMaterial.uniforms.uTime.value = clock.getElapsedTime();
+    renderer.render(scene, camera);
+  }
   animate();
 }
-
-function onWindowResize() {
-  const aspect = window.innerWidth / window.innerHeight;
-  const d = 30;
-  camera.left = -d * aspect;
-  camera.right = d * aspect;
-  camera.top = d;
-  camera.bottom = -d;
-  camera.updateProjectionMatrix();
-  renderer.setSize(window.innerWidth, window.innerHeight);
-}
-
-function animate() {
-  requestAnimationFrame(animate);
-  const time = clock.getElapsedTime();
-  if (material) material.uniforms.uTime.value = time;
-  if (bgMaterial) bgMaterial.uniforms.uTime.value = time;
-  renderer.render(scene, camera);
-}
-
 init();

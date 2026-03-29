@@ -1,26 +1,82 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Limbo - Scroll Journey</title>
-    <link rel="stylesheet" href="/src/style.css">
-</head>
-<body style="margin: 0; padding: 0; overflow-x: hidden; background-color: #000;">
 
-    <div id="hero"></div>
-    <div class="scroll-container">
-      <section class="spacer"></section>
-      <section class="description-section">
-        <div class="content-wrapper">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Limbo - Scroll Journey</title>
+  <link rel="stylesheet" href="/src/style.css">
+</head>
+
+<body>
+  <div id="hero"></div>
+
+  <div id="mask-container">
+    <svg viewBox="0 0 160 90" preserveAspectRatio="xMidYMid slice">
+      <defs>
+        <mask id="limbo-mask" maskUnits="userSpaceOnUse">
+          <rect x="0" y="0" width="160" height="90" fill="white" />
+          <g id="mask-text-group">
+            <text x="80" y="45" dy=".35em" text-anchor="middle" dominant-baseline="middle" fill="black"
+              font-family="Arial Black" font-weight="900" font-size="20">LIMBO</text>
+          </g>
+        </mask>
+      </defs>
+      <rect id="black-wall" x="0" y="0" width="160" height="90" fill="black" mask="url(#limbo-mask)" />
+    </svg>
+  </div>
+
+  <div class="video-container">
+    <video id="gameplay-video" src="/jump-intra.mp4" preload="auto" muted playsinline></video>
+  </div>
+
+  <div id="spider-bg">
+    <img src="/The_Spider.webp" id="spider-img" alt="The Spider">
+  </div>
+
+  <div class="scroll-container">
+    <section class="step" id="step-zoom"></section>
+
+    <section class="step split-section" id="step-narrative">
+      <div class="split-layout">
+        <div class="left-col">
+          <div class="content-wrapper" id="main-title">
             <h2>The World Between Worlds</h2>
             <div class="divider"></div>
-            <p>Limbo is a haunting, minimalist puzzle-platformer that follows a nameless boy as he ventures through a dark, monochrome world in search of his missing sister. </p>
-            <p>With no dialogue or instructions, players must navigate eerie environments filled with deadly traps, hostile creatures, and physics-based puzzles, learning through trial, failure, and discovery. </p> 
-            <p> Stark black-and-white visuals, ambient sound design, and open-ended storytelling create a deeply atmospheric experience where meaning is left to interpretation, making every step feel tense, mysterious, and unforgettable.</p>
-            </div>
+          </div>
+        </div>
+        <div class="right-col">
+          <div class="p-stage">
+            <p>Limbo is a haunting, minimalist puzzle-platformer that follows a nameless boy as he ventures through a
+              dark, monochrome world.</p>
+          </div>
+          <div class="p-stage">
+            <p>Stark black-and-white visuals and ambient sound design create an experience where every step feels tense
+              and mysterious.</p>
+          </div>
+        </div>
+      </div>
     </section>
-    </div>
-    <script type="module" src="/src/main.js"></script>
+
+    <section class="step" id="step-video"></section>
+
+    <section class="step split-section dark-mode" id="step-final">
+      <div class="split-layout">
+        <div class="left-col"></div>
+        <div class="right-col corner-align">
+          <div class="p-stage">
+            <p>With no dialogue or instructions, players must navigate eerie environments filled with deadly traps and
+              hostile creatures.</p>
+          </div>
+          <div class="p-stage">
+            <p>Gravity is your only friend, and your greatest enemy.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <script type="module" src="/src/main.js"></script>
 </body>
+
 </html>
