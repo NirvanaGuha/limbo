@@ -112,6 +112,31 @@ body {
   color: #fff;
 }
 
+/* --- ACCESSIBILITY FOCUS STATES --- */
+/* Shows a crisp white outline ONLY when navigating with the 'Tab' key */
+button:focus-visible,
+a:focus-visible,
+.nav-link:focus-visible {
+  outline: 2px solid rgba(255, 255, 255, 0.8);
+  outline-offset: 6px;
+  border-radius: 2px;
+}
+
+/* --- ENTER THE VOID BUTTON --- */
+#enter-void-btn {
+  transition: opacity 0.8s ease, background 0.4s ease, color 0.4s ease;
+}
+
+#enter-void-btn.visible {
+  opacity: 1 !important;
+  pointer-events: auto !important;
+}
+
+#enter-void-btn:hover {
+  background: #fff !important;
+  color: #000 !important;
+}
+
 /* --- GLOBAL ACTIONS (TOP RIGHT) --- */
 #global-actions {
   position: fixed;
@@ -673,4 +698,125 @@ body {
 
 .pd-link:hover {
   color: #fff;
+}
+
+/* =========================================
+   MOBILE RESPONSIVENESS (Max Width: 768px)
+   ========================================= */
+
+@media (max-width: 768px) {
+
+  /* 1. DECLUTTER THE UI */
+  #global-portals,
+  #global-soundscape {
+    display: none;
+  }
+
+  #global-actions {
+    top: 20px;
+    right: 20px;
+  }
+
+  #menu-btn {
+    top: 20px;
+    left: 20px;
+  }
+
+  #scroll-cue {
+    bottom: 80px;
+  }
+
+  /* 2. FIX THE SVG MASK OVERFLOW */
+  #mask-text-group text {
+    font-size: 8px;
+  }
+
+  /* 3. STACK THE NARRATIVE GRID & FIX TRUNCATION */
+  .split-layout {
+    display: flex !important;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    padding: 0 5vw;
+    /* Keep padding safely inside the viewport */
+    box-sizing: border-box;
+    /* CRITICAL: Stops padding from pushing text off-screen */
+  }
+
+  .left-col {
+    padding: 0;
+    text-align: center;
+    margin-bottom: 30px;
+    width: 100%;
+  }
+
+  /* Reset the grid logic for the right column and spider text */
+  .right-col,
+  .corner-align {
+    padding: 0 !important;
+    width: 100%;
+    display: flex !important;
+    flex-direction: column;
+    align-items: center;
+    justify-items: center !important;
+  }
+
+  .left-col h2 {
+    font-size: 2.5rem;
+    text-align: center;
+  }
+
+  .divider {
+    margin: 15px auto 0 auto;
+  }
+
+  .p-stage {
+    width: 100%;
+    text-align: center !important;
+    /* Force center alignment */
+    margin-bottom: 20px;
+    box-sizing: border-box;
+  }
+
+  .p-stage p {
+    font-size: 1.1rem;
+    line-height: 1.5;
+    white-space: normal;
+    /* Ensures text wraps normally */
+  }
+
+  /* 4. FIX THE VIDEO FRAMING */
+  /* Use 'contain' so the full 16:9 gameplay is visible with cinematic black bars */
+  #gameplay-video {
+    width: 100vw;
+    height: 100vh;
+    object-fit: contain;
+  }
+
+  /* 5. FIX THE SPIDER PARALLAX ZOOM */
+  #spider-img {
+    height: 100vh;
+    /* Reset from 140% so the spider actually fits on screen */
+    top: 0;
+    object-position: center center;
+    /* Keep the spider dead center */
+  }
+
+  /* 6. MODAL & OUTRO POLISH */
+  .modal-content {
+    width: 90%;
+  }
+
+  .link-grid a {
+    font-size: 1.5rem;
+  }
+
+  .outro-buttons {
+    flex-direction: column;
+    gap: 15px;
+  }
+
+  .playdead-logo {
+    width: 250px;
+  }
 }

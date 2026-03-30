@@ -5,6 +5,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Limbo - Scroll Journey</title>
+  <meta name="theme-color" content="#000000">
   <link rel="stylesheet" href="/src/style.css">
 </head>
 
@@ -15,6 +16,8 @@
       <div class="preloader-bar">
         <div class="preloader-progress"></div>
       </div>
+      <button id="enter-void-btn" class="cta-button"
+        style="opacity: 0; pointer-events: none; margin-top: 40px; background: transparent;">ENTER THE VOID</button>
     </div>
   </div>
 
@@ -54,6 +57,12 @@
       <li><button class="nav-link" data-target="#step-post-video">03. Beyond</button></li>
       <li><button class="nav-link" data-target="#step-final">04. The Spider</button></li>
       <li><button class="nav-link" data-target="#step-outro">05. Credits</button></li>
+      <li style="margin-top: 40px; border-top: 1px solid rgba(255,255,255,0.2); padding-top: 40px;">
+        <button class="nav-link" id="menu-portals" style="color: #fff;">Get Game</button>
+      </li>
+      <li>
+        <button class="nav-link" id="menu-soundscape" style="color: #fff;">Soundtrack</button>
+      </li>
     </ul>
   </nav>
 
@@ -101,7 +110,10 @@
   </div>
 
   <div id="spider-bg">
-    <img src="/The_Spider.webp" id="spider-img" alt="The Spider">
+    <picture>
+      <source media="(max-width: 768px)" srcset="/The_Spider_mobile.webp">
+      <img src="/The_Spider.webp" id="spider-img" alt="The Spider">
+    </picture>
   </div>
 
   <div class="scroll-container">

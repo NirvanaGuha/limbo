@@ -5,27 +5,96 @@ import Lenis from 'lenis';
 
 gsap.registerPlugin(ScrollTrigger);
 
-let scene, camera, renderer, bgMaterial, clock = new THREE.Clock();
-const lenis = new Lenis({ lerp: 0.08 });
-
-// 1. Tell Lenis to trigger GSAP's scroll math every time it moves
-lenis.on('scroll', ScrollTrigger.update);
-
-// 2. Add Lenis's requestAnimationFrame to GSAP's internal ticker
-gsap.ticker.add((time) => {
-  lenis.raf(time * 1000); // GSAP runs in seconds, Lenis needs milliseconds
+// --- LENIS & GSAP SYNC (Fixes the vertical jumping) ---
+const lenis = new Lenis({
+  lerp: 0.08,
+  smoothWheel: true, // Keep buttery scroll for desktop mouse wheels
+  smoothTouch: false, // Kill artificial smoothing for thumbs (use native iOS/Android momentum)
+  syncTouch: true // Force GSAP to stay locked to the native thumb scroll
 });
-
-// 3. Prevent GSAP from trying to "catch up" on missed frames, which causes lag
+lenis.on('scroll', ScrollTrigger.update);
+gsap.ticker.add((time) => {
+  lenis.raf(time * 1000);
+});
 gsap.ticker.lagSmoothing(0);
 
+let scene, camera, renderer, bgMaterial, clock = new THREE.Clock();
+
 async function init() {
+  // --- PRELOADER LOGIC ---
+  const preloader = document.getElementById('preloader');
+  const progressLine = document.querySelector('.preloader-progress');
+
+  lenis.stop(); // Lock scroll while loading
+
+  let loadAmount = 0;
+  const loadInterval = setInterval(() => {
+    loadAmount += Math.random() * 15;
+    if (loadAmount > 90) loadAmount = 90;
+    if (progressLine) progressLine.style.width = `${loadAmount}%`;
+  }, 100);
+
+  window.addEventListener('load', () => {
+    clearInterval(loadInterval);
+    if (progressLine) progressLine.style.width = '100%';
+
+    // Wait a beat, then show the "ENTER THE VOID" button
+    setTimeout(() => {
+      const enterBtn = document.getElementById('enter-void-btn');
+      if (enterBtn) {
+        enterBtn.classList.add('visible');
+
+        // The Audio Trap: Wait for the user's explicit click
+        enterBtn.addEventListener('click', () => {
+          const ambientAudio = document.getElementById('ambient-audio');
+
+          if (ambientAudio) {
+            ambientAudio.play();
+            isPlaying = true; // Sync our global audio state
+
+            // Force the UI icons to show "Playing"
+            const iconMuted = document.getElementById('audio-icon-muted');
+            const iconPlaying = document.getElementById('audio-icon-playing');
+            if (iconMuted) iconMuted.style.display = 'none';
+            if (iconPlaying) iconPlaying.style.display = 'block';
+          }
+
+          // Dissolve the preloader and unlock the engine
+          if (preloader) preloader.classList.add('hidden');
+          lenis.start();
+          ScrollTrigger.refresh();
+        });
+      }
+    }, 600);
+  });
+
+  // --- CUSTOM CURSOR (THE WISP) ---
+  const cursor = document.getElementById('custom-cursor');
+  if (cursor) {
+    const xTo = gsap.quickTo(cursor, "x", { duration: 0.1, ease: "power3" });
+    const yTo = gsap.quickTo(cursor, "y", { duration: 0.1, ease: "power3" });
+
+    window.addEventListener("mousemove", (e) => {
+      xTo(e.clientX);
+      yTo(e.clientY);
+    });
+
+    const interactables = document.querySelectorAll('button, a, .nav-link');
+    interactables.forEach(el => {
+      el.addEventListener('mouseenter', () => cursor.classList.add('hover-active'));
+      el.addEventListener('mouseleave', () => cursor.classList.remove('hover-active'));
+    });
+  }
+
+  // --- THREE.JS BACKGROUND ---
   scene = new THREE.Scene();
   const aspect = window.innerWidth / window.innerHeight;
   camera = new THREE.OrthographicCamera(-30 * aspect, 30 * aspect, 30, -30, 0.1, 1000);
   camera.position.z = 100;
   renderer = new THREE.WebGLRenderer({ antialias: true });
   renderer.setSize(window.innerWidth, window.innerHeight);
+  // Caps pixel density at 2x. Keeps it sharp but stops phones from melting.
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
   document.getElementById('hero').appendChild(renderer.domElement);
 
   bgMaterial = new THREE.ShaderMaterial({
@@ -54,56 +123,6 @@ async function init() {
   });
   scene.add(new THREE.Mesh(new THREE.PlaneGeometry(300, 300), bgMaterial));
 
-  // --- PRELOADER LOGIC ---
-  const preloader = document.getElementById('preloader');
-  const progressLine = document.querySelector('.preloader-progress');
-
-  // 1. Lock the scroll wheel immediately
-  lenis.stop();
-
-  // 2. Simulate progress while the network works in the background
-  let loadAmount = 0;
-  const loadInterval = setInterval(() => {
-    loadAmount += Math.random() * 15;
-    if (loadAmount > 90) loadAmount = 90; // Hold at 90% until truly fully loaded
-    progressLine.style.width = `${loadAmount}%`;
-  }, 100);
-
-  // 3. Listen for the browser's absolute confirmation that all assets are ready
-  window.addEventListener('load', () => {
-    clearInterval(loadInterval);
-    progressLine.style.width = '100%'; // Snap to 100%
-
-    // Wait a tiny fraction of a second so the user registers the 100%, then fade out
-    setTimeout(() => {
-      preloader.classList.add('hidden');
-      lenis.start(); // Unlock the scroll wheel
-      ScrollTrigger.refresh(); // Tell GSAP to recalculate everything now that images are loaded
-    }, 600);
-  });
-
-  // --- CUSTOM CURSOR LOGIC ---
-  const cursor = document.getElementById('custom-cursor');
-
-  // Use GSAP's optimized quickTo for buttery smooth 60fps tracking
-  const xTo = gsap.quickTo(cursor, "x", { duration: 0.1, ease: "power3" });
-  const yTo = gsap.quickTo(cursor, "y", { duration: 0.1, ease: "power3" });
-
-  // Track mouse movement
-  window.addEventListener("mousemove", (e) => {
-    xTo(e.clientX);
-    yTo(e.clientY);
-  });
-
-  // Find all clickable elements (buttons and links)
-  const interactables = document.querySelectorAll('button, a, .nav-link');
-
-  // Add the expanding ring effect when hovering over them
-  interactables.forEach(el => {
-    el.addEventListener('mouseenter', () => cursor.classList.add('hover-active'));
-    el.addEventListener('mouseleave', () => cursor.classList.remove('hover-active'));
-  });
-
   // --- AUDIO LOGIC ---
   const audioBtn = document.getElementById('audio-btn');
   const ambientAudio = document.getElementById('ambient-audio');
@@ -111,18 +130,20 @@ async function init() {
   const iconPlaying = document.getElementById('audio-icon-playing');
   let isPlaying = false;
 
-  audioBtn.addEventListener('click', () => {
-    if (isPlaying) {
-      ambientAudio.pause();
-      iconPlaying.style.display = 'none';
-      iconMuted.style.display = 'block';
-    } else {
-      ambientAudio.play();
-      iconMuted.style.display = 'none';
-      iconPlaying.style.display = 'block';
-    }
-    isPlaying = !isPlaying;
-  });
+  if (audioBtn && ambientAudio) {
+    audioBtn.addEventListener('click', () => {
+      if (isPlaying) {
+        ambientAudio.pause();
+        if (iconPlaying) iconPlaying.style.display = 'none';
+        if (iconMuted) iconMuted.style.display = 'block';
+      } else {
+        ambientAudio.play();
+        if (iconMuted) iconMuted.style.display = 'none';
+        if (iconPlaying) iconPlaying.style.display = 'block';
+      }
+      isPlaying = !isPlaying;
+    });
+  }
 
   // --- MODAL SUB-MENU LOGIC ---
   const modals = {
@@ -133,28 +154,42 @@ async function init() {
   const openModal = (id) => {
     if (modals[id]) {
       modals[id].classList.add('active');
-      lenis.stop(); // Pause smooth scrolling while modal is open
+      lenis.stop();
     }
   };
 
   const closeModal = () => {
     Object.values(modals).forEach(m => m && m.classList.remove('active'));
-    lenis.start(); // Resume smooth scrolling
+    lenis.start();
   };
 
-  // Outro Buttons
   const btnPortals = document.getElementById('btn-portals');
   const btnSoundscape = document.getElementById('btn-soundscape');
   if (btnPortals) btnPortals.addEventListener('click', () => openModal('portals'));
   if (btnSoundscape) btnSoundscape.addEventListener('click', () => openModal('soundscape'));
 
-  // Global Action Buttons
   const globalPortals = document.getElementById('global-portals');
   const globalSoundscape = document.getElementById('global-soundscape');
   if (globalPortals) globalPortals.addEventListener('click', () => openModal('portals'));
   if (globalSoundscape) globalSoundscape.addEventListener('click', () => openModal('soundscape'));
 
-  // Close Modals (clicking close button or background)
+  const menuPortals = document.getElementById('menu-portals');
+  const menuSoundscape = document.getElementById('menu-soundscape');
+  if (menuPortals) {
+    menuPortals.addEventListener('click', () => {
+      document.getElementById('full-menu').classList.remove('active');
+      document.getElementById('menu-btn').classList.remove('open');
+      openModal('portals');
+    });
+  }
+  if (menuSoundscape) {
+    menuSoundscape.addEventListener('click', () => {
+      document.getElementById('full-menu').classList.remove('active');
+      document.getElementById('menu-btn').classList.remove('open');
+      openModal('soundscape');
+    });
+  }
+
   document.querySelectorAll('.link-modal, .modal-close').forEach(el => {
     el.addEventListener('click', (e) => {
       if (e.target.classList.contains('link-modal') || e.target.classList.contains('modal-close')) {
@@ -167,10 +202,22 @@ async function init() {
 
   // --- SCENE 1, 2, 3: MASTER PIN ---
   const masterTl = gsap.timeline({
-    scrollTrigger: { trigger: "#master-pin", start: "top top", end: "+=4500", pin: true, scrub: 1 }
+    scrollTrigger: {
+      trigger: "#master-pin",
+      start: "top top",
+      end: "+=4500",
+      pin: true,
+      scrub: 1,
+      invalidateOnRefresh: true
+    }
   });
 
-  masterTl.to("#mask-text-group", { scale: 150, svgOrigin: "80 45", ease: "power2.in", duration: 1 }, 0)
+  masterTl.to("#mask-text-group", {
+    scale: () => window.innerWidth <= 768 ? 400 : 150,
+    svgOrigin: "80 45",
+    ease: "power2.in",
+    duration: 1
+  }, 0)
     .to(bgMaterial.uniforms.uBrightness, { value: 12.0, duration: 1 }, 0)
     .to("#mask-container", { autoAlpha: 0, duration: 0.1 }, 1);
 
@@ -199,14 +246,43 @@ async function init() {
     .to(shadowParas[0], { autoAlpha: 0, duration: 0.5 }, 4.2)
     .to("#shadow-narrative h2, #shadow-narrative .divider", { opacity: 0, duration: 0.5 }, 4.2);
 
-  // --- SCENE 4: VIDEO ---
-  const videoTrigger = ScrollTrigger.create({
-    trigger: "#step-video", start: "top top", end: "+=2000", pin: true, scrub: 1,
-    onEnter: () => gsap.to(".video-container", { autoAlpha: 1, duration: 0.5 }),
-    onLeave: () => gsap.to(".video-container", { autoAlpha: 0, duration: 0.5 }),
-    onEnterBack: () => gsap.to(".video-container", { autoAlpha: 1, duration: 0.5 }),
-    onLeaveBack: () => gsap.to(".video-container", { autoAlpha: 0, duration: 0.5 }),
-    onUpdate: (self) => { if (video.duration) video.currentTime = video.duration * self.progress; }
+  // --- SCENE 4: VIDEO (HARDWARE OPTIMIZED) ---
+  let videoTrigger; // NEW: Declare globally so the menu triggerMap can find it!
+  let mm = gsap.matchMedia();
+
+  // DESKTOP: Frame-by-frame scrubbing
+  mm.add("(min-width: 769px)", () => {
+    videoTrigger = ScrollTrigger.create({
+      trigger: "#step-video", start: "top top", end: "+=2000", pin: true, scrub: 1,
+      onEnter: () => gsap.to(".video-container", { autoAlpha: 1, duration: 0.5 }),
+      onLeave: () => gsap.to(".video-container", { autoAlpha: 0, duration: 0.5 }),
+      onEnterBack: () => gsap.to(".video-container", { autoAlpha: 1, duration: 0.5 }),
+      onLeaveBack: () => gsap.to(".video-container", { autoAlpha: 0, duration: 0.5 }),
+      onUpdate: (self) => { if (video && video.duration) video.currentTime = video.duration * self.progress; }
+    });
+  });
+
+  // MOBILE: Cinematic Playback (No heavy scrubbing)
+  mm.add("(max-width: 768px)", () => {
+    videoTrigger = ScrollTrigger.create({
+      trigger: "#step-video", start: "top top", end: "+=1500", pin: true,
+      onEnter: () => {
+        gsap.to(".video-container", { autoAlpha: 1, duration: 0.5 });
+        if (video) video.play();
+      },
+      onLeave: () => {
+        gsap.to(".video-container", { autoAlpha: 0, duration: 0.5 });
+        if (video) video.pause();
+      },
+      onEnterBack: () => {
+        gsap.to(".video-container", { autoAlpha: 1, duration: 0.5 });
+        if (video) video.play();
+      },
+      onLeaveBack: () => {
+        gsap.to(".video-container", { autoAlpha: 0, duration: 0.5 });
+        if (video) video.pause();
+      }
+    });
   });
 
   // --- SCENE 4.5: POST-VIDEO ---
@@ -256,15 +332,17 @@ async function init() {
     }
   });
 
-  // --- MENU NAVIGATION LOGIC (SAFELY AT THE BOTTOM) ---
+  // --- MENU NAVIGATION LOGIC ---
   const menuBtn = document.getElementById('menu-btn');
   const fullMenu = document.getElementById('full-menu');
   const navLinks = document.querySelectorAll('.nav-link');
 
-  menuBtn.addEventListener('click', () => {
-    menuBtn.classList.toggle('open');
-    fullMenu.classList.toggle('active');
-  });
+  if (menuBtn && fullMenu) {
+    menuBtn.addEventListener('click', () => {
+      menuBtn.classList.toggle('open');
+      fullMenu.classList.toggle('active');
+    });
+  }
 
   const triggerMap = {
     '#master-pin': masterTl.scrollTrigger,
@@ -278,8 +356,10 @@ async function init() {
     link.addEventListener('click', (e) => {
       const targetId = e.target.getAttribute('data-target');
 
-      menuBtn.classList.remove('open');
-      fullMenu.classList.remove('active');
+      if (menuBtn && fullMenu) {
+        menuBtn.classList.remove('open');
+        fullMenu.classList.remove('active');
+      }
 
       ScrollTrigger.refresh();
       const trigger = triggerMap[targetId];
