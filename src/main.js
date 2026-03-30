@@ -246,43 +246,36 @@ async function init() {
     .to(shadowParas[0], { autoAlpha: 0, duration: 0.5 }, 4.2)
     .to("#shadow-narrative h2, #shadow-narrative .divider", { opacity: 0, duration: 0.5 }, 4.2);
 
-  // --- SCENE 4: VIDEO (HARDWARE OPTIMIZED) ---
-  let videoTrigger; // NEW: Declare globally so the menu triggerMap can find it!
-  let mm = gsap.matchMedia();
-
-  // DESKTOP: Frame-by-frame scrubbing
-  mm.add("(min-width: 769px)", () => {
-    videoTrigger = ScrollTrigger.create({
-      trigger: "#step-video", start: "top top", end: "+=2000", pin: true, scrub: 1,
-      onEnter: () => gsap.to(".video-container", { autoAlpha: 1, duration: 0.5 }),
-      onLeave: () => gsap.to(".video-container", { autoAlpha: 0, duration: 0.5 }),
-      onEnterBack: () => gsap.to(".video-container", { autoAlpha: 1, duration: 0.5 }),
-      onLeaveBack: () => gsap.to(".video-container", { autoAlpha: 0, duration: 0.5 }),
-      onUpdate: (self) => { if (video && video.duration) video.currentTime = video.duration * self.progress; }
-    });
-  });
-
-  // MOBILE: Cinematic Playback (No heavy scrubbing)
-  mm.add("(max-width: 768px)", () => {
-    videoTrigger = ScrollTrigger.create({
-      trigger: "#step-video", start: "top top", end: "+=1500", pin: true,
-      onEnter: () => {
-        gsap.to(".video-container", { autoAlpha: 1, duration: 0.5 });
-        if (video) video.play();
-      },
-      onLeave: () => {
-        gsap.to(".video-container", { autoAlpha: 0, duration: 0.5 });
-        if (video) video.pause();
-      },
-      onEnterBack: () => {
-        gsap.to(".video-container", { autoAlpha: 1, duration: 0.5 });
-        if (video) video.play();
-      },
-      onLeaveBack: () => {
-        gsap.to(".video-container", { autoAlpha: 0, duration: 0.5 });
-        if (video) video.pause();
+  // --- SCENE 4: VIDEO (HARDWARE OPTIMIZED & SEQUENCED) ---
+  const videoTrigger = ScrollTrigger.create({
+    trigger: "#step-video",
+    start: "top top",
+    // Dynamically calculate pin depth for mobile vs desktop
+    end: () => window.innerWidth <= 768 ? "+=1500" : "+=2000",
+    pin: true,
+    invalidateOnRefresh: true, // Forces recalculation on screen rotate
+    onEnter: () => {
+      gsap.to(".video-container", { autoAlpha: 1, duration: 0.5 });
+      if (window.innerWidth <= 768 && video) video.play(); // Mobile: Play
+    },
+    onLeave: () => {
+      gsap.to(".video-container", { autoAlpha: 0, duration: 0.5 });
+      if (window.innerWidth <= 768 && video) video.pause();
+    },
+    onEnterBack: () => {
+      gsap.to(".video-container", { autoAlpha: 1, duration: 0.5 });
+      if (window.innerWidth <= 768 && video) video.play();
+    },
+    onLeaveBack: () => {
+      gsap.to(".video-container", { autoAlpha: 0, duration: 0.5 });
+      if (window.innerWidth <= 768 && video) video.pause();
+    },
+    onUpdate: (self) => {
+      // Desktop: Frame-by-frame scrub. Mobile: Ignore scrub.
+      if (window.innerWidth > 768 && video && video.duration) {
+        video.currentTime = video.duration * self.progress;
       }
-    });
+    }
   });
 
   // --- SCENE 4.5: POST-VIDEO ---
